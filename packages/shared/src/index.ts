@@ -48,3 +48,24 @@ export interface GeminiSummaryResult {
   category: Category;
   tags: string[];
 }
+
+export interface ModelData {
+  id: string;
+  name: string;
+  vendor: string;
+  vendorColor: string;
+  logoUrl: string;
+  context: string;
+  inputPrice: string;
+  outputPrice: string;
+  released: string;
+  arenaElo: number;
+  strengths: string;
+  coding: number;
+  reasoning: number;
+  knowledge: number;
+  multimodal: number;
+  speed: number;
+  costEff: number;
+}
+

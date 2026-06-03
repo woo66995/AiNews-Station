@@ -1,210 +1,13 @@
 ---
 import Base from '../layouts/Base.astro';
+import type { ModelData } from 'shared';
+import { getModels } from '../lib/api';
 
-// Data sourced from LMSYS Chatbot Arena (June 2026), official pricing pages.
+// Data sourced dynamically from Cloudflare D1 database.
 // Elo scores are Bradley-Terry Elo from ~6M pairwise human votes.
-// Category scores are synthetic benchmarks normalized to 0-100 scale
-// based on Arena category rankings, public leaderboards, and official data.
+// Category scores are synthetic benchmarks normalized to 0-100 scale.
 
-interface ModelData {
-  id: string;
-  name: string;
-  vendor: string;
-  vendorColor: string;
-  logoUrl: string;
-  context: string;
-  inputPrice: string;
-  outputPrice: string;
-  released: string;
-  arenaElo: number;
-  strengths: string;
-  coding: number;
-  reasoning: number;
-  knowledge: number;
-  multimodal: number;
-  speed: number;
-  costEff: number;
-}
-
-const models: ModelData[] = [
-  {
-    id: 'claude-opus-4-8',
-    name: 'Claude Opus 4.8',
-    vendor: 'Anthropic',
-    vendorColor: '#CC785C',
-    logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/b/b0/Claude_AI_symbol.svg',
-    context: '200K', inputPrice: '$15/M', outputPrice: '$75/M', released: '2026-05',
-    arenaElo: 1512,
-    strengths: 'Anthropic 最新旗舰巅峰，全网最长思维链与最高代码智能，多模态大幅提升，当之无愧的王座',
-    coding: 100, reasoning: 100, knowledge: 98, multimodal: 94, speed: 40, costEff: 15,
-  },
-  {
-    id: 'claude-opus-4-7-thinking',
-    name: 'Claude Opus 4.7 Thinking',
-    vendor: 'Anthropic',
-    vendorColor: '#CC785C',
-    logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/b/b0/Claude_AI_symbol.svg',
-    context: '200K', inputPrice: '$15/M', outputPrice: '$75/M', released: '2026-04',
-    arenaElo: 1500,
-    strengths: '全球最强综合推理，Web Dev 冠军，长推理链王者',
-    coding: 98, reasoning: 100, knowledge: 95, multimodal: 85, speed: 35, costEff: 15,
-  },
-  {
-    id: 'claude-sonnet-4-6',
-    name: 'Claude Sonnet 4.6',
-    vendor: 'Anthropic',
-    vendorColor: '#CC785C',
-    logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/b/b0/Claude_AI_symbol.svg',
-    context: '200K', inputPrice: '$3/M', outputPrice: '$15/M', released: '2025-12',
-    arenaElo: 1467,
-    strengths: '性价比之王，代码/WebDev双优，开发者日常首选',
-    coding: 93, reasoning: 90, knowledge: 88, multimodal: 83, speed: 75, costEff: 68,
-  },
-  {
-    id: 'gpt-5.5-high',
-    name: 'GPT-5.5 (High)',
-    vendor: 'OpenAI',
-    vendorColor: '#10a37f',
-    logoUrl: 'https://api.iconify.design/logos:openai-icon.svg',
-    context: '256K', inputPrice: '$15/M', outputPrice: '$60/M', released: '2026-03',
-    arenaElo: 1481,
-    strengths: 'OpenAI 旗舰，超长上下文，插件生态全球最丰富',
-    coding: 94, reasoning: 93, knowledge: 93, multimodal: 90, speed: 45, costEff: 18,
-  },
-  {
-    id: 'llama-4.5-405b',
-    name: 'Llama 4.5 (405B)',
-    vendor: 'Meta',
-    vendorColor: '#044E95',
-    logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/7/7b/Meta_Platforms_Inc._logo.svg',
-    context: '512K', inputPrice: '$0.8/M', outputPrice: '$2.4/M', released: '2026-05',
-    arenaElo: 1482,
-    strengths: '全球最强开源超大参数模型，本地可部署，代码与多模态全面超越上一代',
-    coding: 92, reasoning: 91, knowledge: 94, multimodal: 89, speed: 50, costEff: 72,
-  },
-  {
-    id: 'gemini-3-pro',
-    name: 'Gemini 3.0 Pro',
-    vendor: 'Google',
-    vendorColor: '#4285f4',
-    logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg',
-    context: '2M', inputPrice: '$5/M', outputPrice: '$15/M', released: '2026-03',
-    arenaElo: 1486,
-    strengths: '2M 超长上下文，原生视频/音频多模态，Google 生态',
-    coding: 91, reasoning: 92, knowledge: 91, multimodal: 94, speed: 65, costEff: 55,
-  },
-  {
-    id: 'gemini-3.5-flash',
-    name: 'Gemini 3.5 Flash',
-    vendor: 'Google',
-    vendorColor: '#4285f4',
-    logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg',
-    context: '1M', inputPrice: '$0.5/M', outputPrice: '$2.5/M', released: '2026-05',
-    arenaElo: 1480,
-    strengths: '极高性价比与速度，百万上下文，多模态快思考',
-    coding: 90, reasoning: 88, knowledge: 89, multimodal: 92, speed: 88, costEff: 82,
-  },
-  {
-    id: 'deepseek-v4-pro',
-    name: 'DeepSeek V4 Pro',
-    vendor: 'DeepSeek',
-    vendorColor: '#5B6EF5',
-    logoUrl: 'https://avatars.githubusercontent.com/u/148330874?s=200',
-    context: '128K', inputPrice: '$0.55/M', outputPrice: '$2.2/M', released: '2025-11',
-    arenaElo: 1456,
-    strengths: '开源标杆，极致编码推理，中文优化，价格仅巨头 1/10',
-    coding: 92, reasoning: 89, knowledge: 87, multimodal: 0, speed: 82, costEff: 92,
-  },
-  {
-    id: 'qwen3.7-max',
-    name: 'Qwen3.7 Max',
-    vendor: 'Alibaba (Qwen)',
-    vendorColor: '#FF6A00',
-    logoUrl: 'https://avatars.githubusercontent.com/u/141223081?s=200',
-    context: '256K', inputPrice: '$0.5/M', outputPrice: '$2/M', released: '2026-04',
-    arenaElo: 1463,
-    strengths: '阿里最强，MoE 高效推理，多语言出色，开源生态活跃',
-    coding: 89, reasoning: 88, knowledge: 87, multimodal: 0, speed: 80, costEff: 93,
-  },
-  {
-    id: 'glm-5.1',
-    name: 'GLM 5.1',
-    vendor: 'Zhipu AI (智谱)',
-    vendorColor: '#2563EB',
-    logoUrl: 'https://avatars.githubusercontent.com/u/128068098?s=200',
-    context: '128K', inputPrice: '$0.7/M', outputPrice: '$2.8/M', released: '2026-02',
-    arenaElo: 1471,
-    strengths: '中国排名最高，WebDev Top5，文本理解与逻辑推理突出',
-    coding: 91, reasoning: 90, knowledge: 89, multimodal: 78, speed: 72, costEff: 70,
-  },
-  {
-    id: 'kimi-k2.6',
-    name: 'Kimi K2.6',
-    vendor: 'Moonshot AI (月之暗面)',
-    vendorColor: '#8B5CF6',
-    logoUrl: 'https://avatars.githubusercontent.com/u/129677468?s=200',
-    context: '128K', inputPrice: '$2/M', outputPrice: '$8/M', released: '2026-04',
-    arenaElo: 1451,
-    strengths: '国产长上下文先驱，Web Dev 强，视觉理解能力突出',
-    coding: 88, reasoning: 87, knowledge: 86, multimodal: 80, speed: 68, costEff: 55,
-  },
-  {
-    id: 'mimo-v2.5-pro',
-    name: 'MiMo V2.5 Pro',
-    vendor: 'Xiaomi (小米)',
-    vendorColor: '#FF6900',
-    logoUrl: 'https://avatars.githubusercontent.com/u/13068227?s=200',
-    context: '128K', inputPrice: '$1.2/M', outputPrice: '$4.8/M', released: '2026-01',
-    arenaElo: 1465,
-    strengths: '小米旗舰，多模态优异，性价比超群，手机端优化',
-    coding: 87, reasoning: 86, knowledge: 85, multimodal: 88, speed: 76, costEff: 60,
-  },
-  {
-    id: 'ernie-5.1',
-    name: 'ERNIE 5.1',
-    vendor: 'Baidu (百度)',
-    vendorColor: '#3B82F6',
-    logoUrl: 'https://avatars.githubusercontent.com/u/12965840?s=200',
-    context: '128K', inputPrice: '$1/M', outputPrice: '$4/M', released: '2026-02',
-    arenaElo: 1473,
-    strengths: '百度旗舰，搜索增强 + 知识图谱，中文理解深厚',
-    coding: 85, reasoning: 87, knowledge: 92, multimodal: 76, speed: 60, costEff: 58,
-  },
-  {
-    id: 'minimax-m2.7',
-    name: 'MiniMax M2.7',
-    vendor: 'MiniMax (稀宇)',
-    vendorColor: '#F59E0B',
-    logoUrl: 'https://avatars.githubusercontent.com/u/103279624?s=200',
-    context: '256K', inputPrice: '$0.3/M', outputPrice: '$1.2/M', released: '2025-12',
-    arenaElo: 1420,
-    strengths: '超低价格 + 256K 上下文，国产性价比黑马，语音合成强',
-    coding: 80, reasoning: 82, knowledge: 81, multimodal: 72, speed: 78, costEff: 90,
-  },
-  {
-    id: 'hunyuan-hy3',
-    name: 'Hunyuan HY3',
-    vendor: 'Tencent (腾讯)',
-    vendorColor: '#00C4FF',
-    logoUrl: 'https://avatars.githubusercontent.com/u/18461506?s=200',
-    context: '128K', inputPrice: '$0.8/M', outputPrice: '$2.4/M', released: '2025-12',
-    arenaElo: 1418,
-    strengths: '腾讯混元旗舰，企业微信/微信生态深度集成',
-    coding: 83, reasoning: 84, knowledge: 83, multimodal: 74, speed: 70, costEff: 65,
-  },
-  {
-    id: 'grok-4.20',
-    name: 'Grok 4.20',
-    vendor: 'xAI (Elon Musk)',
-    vendorColor: '#111111',
-    logoUrl: 'https://avatars.githubusercontent.com/u/149570829?s=200',
-    context: '128K', inputPrice: '$5/M', outputPrice: '$15/M', released: '2026-05',
-    arenaElo: 1479,
-    strengths: '实时搜索增强，思维链推理长，xAI 生态（X 深度整合）',
-    coding: 88, reasoning: 91, knowledge: 90, multimodal: 82, speed: 55, costEff: 40,
-  },
-];
-
+const models = (await getModels()) as ModelData[];
 const modelsJson = JSON.stringify(models);
 
 // Benchmark labels for bar chart
@@ -317,12 +120,12 @@ const benchmarkLabels = ['Arena Elo', '编程', '推理', '知识', '多模态',
   </div>
 </Base>
 
-<script>
-    const MODELS = [{id:'claude-opus-4-8',name:'Claude Opus 4.8',vendor:'Anthropic',vendorColor:'#CC785C',arenaElo:1512,coding:100,reasoning:100,knowledge:98,multimodal:94,speed:40,costEff:15},{id:'claude-opus-4-7-thinking',name:'Claude Opus 4.7 Thinking',vendor:'Anthropic',vendorColor:'#CC785C',arenaElo:1500,coding:98,reasoning:100,knowledge:95,multimodal:85,speed:35,costEff:15},{id:'claude-sonnet-4-6',name:'Claude Sonnet 4.6',vendor:'Anthropic',vendorColor:'#CC785C',arenaElo:1467,coding:93,reasoning:90,knowledge:88,multimodal:83,speed:75,costEff:68},{id:'gpt-5.5-high',name:'GPT-5.5 (High)',vendor:'OpenAI',vendorColor:'#10a37f',arenaElo:1481,coding:94,reasoning:93,knowledge:93,multimodal:90,speed:45,costEff:18},{id:'llama-4.5-405b',name:'Llama 4.5 (405B)',vendor:'Meta',vendorColor:'#044E95',arenaElo:1482,coding:92,reasoning:91,knowledge:94,multimodal:89,speed:50,costEff:72},{id:'gemini-3-pro',name:'Gemini 3.0 Pro',vendor:'Google',vendorColor:'#4285f4',arenaElo:1486,coding:91,reasoning:92,knowledge:91,multimodal:94,speed:65,costEff:55},{id:'gemini-3.5-flash',name:'Gemini 3.5 Flash',vendor:'Google',vendorColor:'#4285f4',arenaElo:1480,coding:90,reasoning:88,knowledge:89,multimodal:92,speed:88,costEff:82},{id:'deepseek-v4-pro',name:'DeepSeek V4 Pro',vendor:'DeepSeek',vendorColor:'#5B6EF5',arenaElo:1456,coding:92,reasoning:89,knowledge:87,multimodal:0,speed:82,costEff:92},{id:'qwen3.7-max',name:'Qwen3.7 Max',vendor:'Alibaba (Qwen)',vendorColor:'#FF6A00',arenaElo:1463,coding:89,reasoning:88,knowledge:87,multimodal:0,speed:80,costEff:93},{id:'glm-5.1',name:'GLM 5.1',vendor:'Zhipu AI',vendorColor:'#2563EB',arenaElo:1471,coding:91,reasoning:90,knowledge:89,multimodal:78,speed:72,costEff:70},{id:'kimi-k2.6',name:'Kimi K2.6',vendor:'Moonshot AI',vendorColor:'#8B5CF6',arenaElo:1451,coding:88,reasoning:87,knowledge:86,multimodal:80,speed:68,costEff:55},{id:'mimo-v2.5-pro',name:'MiMo V2.5 Pro',vendor:'Xiaomi',vendorColor:'#FF6900',arenaElo:1465,coding:87,reasoning:86,knowledge:85,multimodal:88,speed:76,costEff:60},{id:'ernie-5.1',name:'ERNIE 5.1',vendor:'Baidu',vendorColor:'#3B82F6',arenaElo:1473,coding:85,reasoning:87,knowledge:92,multimodal:76,speed:60,costEff:58},{id:'minimax-m2.7',name:'MiniMax M2.7',vendor:'MiniMax',vendorColor:'#F59E0B',arenaElo:1420,coding:80,reasoning:82,knowledge:81,multimodal:72,speed:78,costEff:90},{id:'hunyuan-hy3',name:'Hunyuan HY3',vendor:'Tencent',vendorColor:'#00C4FF',arenaElo:1418,coding:83,reasoning:84,knowledge:83,multimodal:74,speed:70,costEff:65},{id:'grok-4.20',name:'Grok 4.20',vendor:'xAI',vendorColor:'#111111',arenaElo:1479,coding:88,reasoning:91,knowledge:90,multimodal:82,speed:55,costEff:40}];
+<script define:vars={{ modelsJson }}>
+    const MODELS = JSON.parse(modelsJson);
 
     const vendorColors = MODELS.map(m => m.vendorColor);
     const BENCH = ['Arena Elo','编程','推理','知识','多模态','速度','性价比'];
-    const visible = new Set(['claude-opus-4-8','claude-sonnet-4-6','claude-opus-4-7-thinking','gpt-5.5-high','llama-4.5-405b','gemini-3.5-flash','deepseek-v4-pro','qwen3.7-max','glm-5.1','kimi-k2.6','mimo-v2.5-pro','ernie-5.1','minimax-m2.7','hunyuan-hy3','grok-4.20']);
+    const visible = new Set(MODELS.map(m => m.id));
 
     function normElo(e) { return ((e - 1400) / 150) * 100; }
 

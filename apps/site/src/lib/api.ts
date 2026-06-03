@@ -88,3 +88,12 @@ export async function getDailyArchives(): Promise<string[]> {
     return [];
   }
 }
+
+export async function getModels(): Promise<any[]> {
+  try {
+    return await apiFetch<any[]>('/api/models');
+  } catch (err) {
+    console.error('getModels failed:', err);
+    return [];
+  }
+}

@@ -291,6 +291,14 @@ export async function handleApiRequest(url: URL, db: D1Database): Promise<Respon
       });
     }
 
+    if (path === '/api/models') {
+      // Return list of models ordered by arenaElo DESC
+      const res = await db.prepare(`SELECT * FROM models ORDER BY arenaElo DESC`).all<any>();
+      return new Response(JSON.stringify(res.results), {
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
     return new Response('Not found', { status: 404 });
   } catch (err) {
     console.error('API Error:', err);
