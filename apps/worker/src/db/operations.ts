@@ -2,7 +2,7 @@ import type { Article } from 'shared';
 import { summarizeArticle } from '../ai/gemini';
 
 const BATCH_SIZE = 10; // articles per summarize batch
-const INTER_REQUEST_DELAY_MS = 600; // 600ms between Gemini calls → ~100 RPM
+const INTER_REQUEST_DELAY_MS = 5000; // 5000ms between Gemini calls to stay within free tier rate limit (~12 RPM)
 
 export async function deduplicateArticles(
   db: D1Database,
