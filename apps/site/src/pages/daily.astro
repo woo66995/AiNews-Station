@@ -1,0 +1,125 @@
+---
+import Base from '../layouts/Base.astro';
+import { getDailyDigest, getDailyArchives } from '../lib/api';
+import { formatDate, parseTags, getCategoryInfo, SOURCE_LABELS } from '../lib/data';
+
+// Accept ?date=YYYY-MM-DD from URL
+const targetDate = Astro.url.searchParams.get('date') || undefined;
+
+// Fetch articles and archive dates in parallel
+const [{ date, articles }, archives] = await Promise.all([
+  getDailyDigest(targetDate),
+  getDailyArchives()
+]);
+
+const displayDate = new Date(date + 'T00:00:00').toLocaleDateString('zh-CN', {
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric',
+  weekday: 'long',
+});
+
+// Build archive dropdown options
+const archiveOptions = archives.map(d => ({
+  value: d,
+  label: new Date(d + 'T00:00:00').toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' })
+}));
+---
+
+<Base title={`${date === new Date().toISOString().slice(0,10) ? '今日速览' : '往期速览'} | AiNews`} description={`${displayDate} AI 技术精选资讯`}>
+  <div class="max-w-2xl mx-auto">
+    <!-- Header -->
+    <div class="mb-2">
+      <a href="/" class="inline-flex items-center gap-1.5 text-sm text-gray-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors mb-6">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+        </svg>
+        返回首页
+      </a>
+    </div>
+
+    <div class="mb-8 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+      <div>
+        <div class="flex items-center gap-2 mb-1">
+          <span class="text-2xl">⚡</span>
+          <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-50">
+            {date === new Date().toISOString().slice(0,10) ? '今日速览' : '往期速览'}
+          </h1>
+        </div>
+        <p class="text-gray-500 dark:text-gray-400 text-sm ml-10">{displayDate} · 精选 {articles.length} 条资讯</p>
+      </div>
+
+      <!-- Archive selector -->
+      {archives.length > 0 && (
+        <div class="sm:ml-0 ml-10">
+          <select
+            class="text-sm bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg px-3 py-1.5 focus:ring-brand-500 focus:border-brand-500 block w-full outline-none"
+            onchange="window.location.href = this.value ? '/daily?date=' + this.value : '/daily'"
+          >
+            <option value="">最新速览</option>
+            {archiveOptions.map(opt => (
+              <option value={opt.value} selected={opt.value === date}>{opt.value} ({opt.label})</option>
+            ))}
+          </select>
+        </div>
+      )}
+    </div>
+
+    {articles.length === 0 ? (
+      <div class="text-center py-16 text-gray-400 border border-dashed border-gray-200 dark:border-gray-800 rounded-xl">
+        <p class="text-lg mb-2">{targetDate ? '该日期无精选资讯' : '今日内容正在更新中'}</p>
+        <p class="text-sm">内容自动抓取更新中，请稍后再来</p>
+      </div>
+    ) : (
+      <div class="space-y-4">
+        {articles.map((article, i) => {
+          const cat = getCategoryInfo(article.category ?? '');
+          const src = SOURCE_LABELS[article.source] ?? article.source;
+          const tags = parseTags(article.tags as string | undefined);
+          return (
+            <article class="relative flex gap-4 p-5 rounded-2xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 hover:border-brand-300 dark:hover:border-brand-700 hover:shadow-md transition-all duration-200 group">
+              <!-- 序号 -->
+              <div class="flex flex-col items-center gap-1 shrink-0">
+                <span class={`text-2xl font-black ${i < 3 ? 'text-brand-500' : 'text-gray-300 dark:text-gray-700'}`}>
+                  {String(i + 1).padStart(2, '0')}
+                </span>
+                <span class="text-xl">{cat.emoji}</span>
+              </div>
+
+              <!-- 内容 -->
+              <div class="flex-1 min-w-0">
+                <a href={`/article/${article.slug}/`} class="block">
+                  <h2 class="text-base font-semibold text-gray-900 dark:text-gray-100 leading-snug mb-1.5 group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">
+                    {article.title_zh || article.title}
+                  </h2>
+                </a>
+                {article.summary_zh && (
+                  <p class="text-sm text-gray-500 dark:text-gray-400 leading-relaxed mb-2">
+                    {article.summary_zh}
+                  </p>
+                )}
+                <div class="flex items-center gap-3 flex-wrap">
+                  <span class="text-xs text-gray-400">{src}</span>
+                  {tags.slice(0, 3).map(tag => (
+                    <a href={`/tag/${tag}/`} class="text-xs text-brand-500 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300 transition-colors">
+                      #{tag}
+                    </a>
+                  ))}
+                  {article.score > 0 && (
+                    <span class="text-xs text-gray-300 dark:text-gray-600 ml-auto">▲ {article.score}</span>
+                  )}
+                </div>
+              </div>
+            </article>
+          );
+        })}
+      </div>
+    )}
+
+    <!-- Footer -->
+    <div class="mt-10 pt-6 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between text-sm text-gray-400">
+      <span>⚡ AiNews · 自动更新</span>
+      <a href="/" class="hover:text-brand-600 dark:hover:text-brand-400 transition-colors">查看全部资讯 →</a>
+    </div>
+  </div>
+</Base>

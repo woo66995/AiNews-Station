@@ -1,0 +1,181 @@
+---
+import Base from '../layouts/Base.astro';
+import ArticleCard from '../components/ArticleCard.astro';
+import CategoryNav from '../components/CategoryNav.astro';
+import { getArticles, getDailyDigest } from '../lib/api';
+
+const page = Number(Astro.url.searchParams.get('page') || 1);
+const limit = 30;
+const offset = (page - 1) * limit;
+const { articles, total } = await getArticles({ limit, offset });
+const totalPages = Math.ceil(total / limit);
+
+// Headline ticker: grab 6 latest daily titles
+const headlines = import.meta.env.PROD
+  ? (await getDailyDigest()).articles.slice(0, 6).map(a => ({ slug: a.slug, title: a.title_zh || a.title }))
+  : [];
+---
+
+<Base title="AiNews">
+  <div class="mb-6">
+    <div class="flex items-center justify-between mb-3">
+      <h1 class="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white">
+        AI 情报站
+      </h1>
+      <!-- View Toggle -->
+      <div class="hidden sm:flex items-center bg-gray-100 dark:bg-gray-800 rounded-lg p-1" id="view-toggle">
+        <button data-view="grid" class="view-btn p-1.5 rounded-md text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors" title="卡片视图">
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M4 4h6v6H4V4zm10 0h6v6h-6V4zM4 14h6v6H4v-6zm10 0h6v6h-6v-6z"/></svg>
+        </button>
+        <button data-view="list" class="view-btn p-1.5 rounded-md text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors" title="列表视图">
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M4 6h2v2H4V6zm4 0h12v2H8V6zm-4 5h2v2H4v-2zm4 0h12v2H8v-2zm-4 5h2v2H4v-2zm4 0h12v2H8v-2z"/></svg>
+        </button>
+      </div>
+    </div>
+    <p class="text-base text-gray-500 dark:text-gray-400 max-w-2xl mb-5">
+      专为开发者打造的 AI 技术雷达。实时追踪全球 AI Coding、Agent 与大模型前沿动态，为你消除信息噪音，直达核心技术价值。
+    </p>
+
+    <!-- Category Nav: moved from header to here -->
+    <div class="mb-5">
+      <CategoryNav activeCategory={undefined} />
+    </div>
+
+    <!-- Headline Ticker + Daily Link row -->
+    <div class="flex items-stretch gap-3 mb-4">
+      <!-- Scrolling headline ticker -->
+      <div class="flex-1 min-w-0 relative bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl px-4 py-2.5 flex items-center overflow-hidden h-10">
+        <span class="text-xs font-bold text-brand-600 dark:text-brand-400 shrink-0 mr-3 whitespace-nowrap">⚡ 快讯</span>
+        <div class="flex-1 overflow-hidden relative h-6">
+          <div class="headline-track flex flex-col animate-headline-scroll">
+            {headlines.length > 0 ? headlines.map(h => (
+              <a href={`/article/${h.slug}/`} class="h-6 flex items-center text-sm text-gray-700 dark:text-gray-300 hover:text-brand-600 dark:hover:text-brand-400 transition-colors truncate whitespace-nowrap">
+                {h.title}
+              </a>
+            )) : (
+              <span class="h-6 flex items-center text-sm text-gray-400">正在抓取中，请稍后刷新</span>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <a
+        href="/daily/"
+        class="shrink-0 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-brand-600 text-white text-sm font-semibold hover:bg-brand-700 hover:scale-[1.02] active:scale-[0.98] transition-all duration-150 shadow-md shadow-brand-500/10"
+      >
+        <span>⚡</span>
+        今日速览
+      </a>
+    </div>
+
+    <style>
+      @keyframes headline-scroll-inner {
+        0%, 14% { transform: translateY(0); }
+        17%, 31% { transform: translateY(-1.5rem); }
+        34%, 48% { transform: translateY(-3rem); }
+        51%, 65% { transform: translateY(-4.5rem); }
+        68%, 82% { transform: translateY(-6rem); }
+        85%, 97% { transform: translateY(-7.5rem); }
+        100% { transform: translateY(0); }
+      }
+      .animate-headline-scroll {
+        animation: headline-scroll-inner 15s ease-in-out infinite;
+      }
+    </style>
+  </div>
+
+  <!-- Article list/grid -->
+  <div id="article-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 transition-all duration-300">
+    {articles.length === 0 ? (
+      <div class="col-span-full py-12 text-center text-gray-500 border border-dashed border-gray-300 dark:border-gray-800 rounded-xl">
+        正在获取最新数据，请稍后再来。
+      </div>
+    ) : (
+      articles.map((article) => <ArticleCard article={article} />)
+    )}
+  </div>
+
+  <!-- Pagination -->
+  {totalPages > 1 && (
+    <nav class="mt-10 flex items-center justify-center gap-2">
+      {page > 1 && (
+        <a href={`/?page=${page - 1}`} class="px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-brand-600 dark:hover:text-brand-400 transition-colors">
+          ← 上一页
+        </a>
+      )}
+
+      {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
+        const p = i + 1;
+        return (
+          <a
+            href={`/?page=${p}`}
+            class={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+              p === page
+                ? 'bg-brand-600 text-white'
+                : 'border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'
+            }`}
+          >
+            {p}
+          </a>
+        );
+      })}
+
+      {totalPages > 7 && <span class="px-2 text-gray-400">…</span>}
+
+      {page < totalPages && (
+        <a href={`/?page=${page + 1}`} class="px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-brand-600 dark:hover:text-brand-400 transition-colors">
+          下一页 →
+        </a>
+      )}
+    </nav>
+  )}
+
+  <p class="mt-4 text-center text-xs text-gray-400">
+    共 {total} 篇文章 · 每页 {limit} 篇
+  </p>
+</Base>
+
+<script>
+  function setupViewToggle() {
+    const container = document.getElementById('article-container');
+    const btns = document.querySelectorAll('.view-btn');
+    if (!container || btns.length === 0) return;
+
+    // Default to grid
+    const savedView = localStorage.getItem('ainews-view') || 'grid';
+
+    function applyView(view: string) {
+      if (view === 'list') {
+        container?.classList.remove('grid', 'grid-cols-1', 'md:grid-cols-2', 'lg:grid-cols-3', 'gap-6');
+        container?.classList.add('flex', 'flex-col', 'gap-4', 'list-view');
+      } else {
+        container?.classList.remove('flex', 'flex-col', 'gap-4', 'list-view');
+        container?.classList.add('grid', 'grid-cols-1', 'md:grid-cols-2', 'lg:grid-cols-3', 'gap-6');
+      }
+
+      btns.forEach(btn => {
+        const btnView = (btn as HTMLElement).dataset.view;
+        if (btnView === view) {
+          btn.classList.add('bg-white', 'dark:bg-gray-700', 'text-gray-900', 'dark:text-white', 'shadow-sm');
+          btn.classList.remove('text-gray-500');
+        } else {
+          btn.classList.remove('bg-white', 'dark:bg-gray-700', 'text-gray-900', 'dark:text-white', 'shadow-sm');
+          btn.classList.add('text-gray-500');
+        }
+      });
+
+      localStorage.setItem('ainews-view', view);
+    }
+
+    applyView(savedView);
+
+    btns.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const view = (e.currentTarget as HTMLElement).dataset.view;
+        if (view) applyView(view);
+      });
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', setupViewToggle);
+</script>

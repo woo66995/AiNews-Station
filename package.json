@@ -1,0 +1,23 @@
+{
+  "name": "ainews",
+  "version": "0.1.0",
+  "private": true,
+  "engines": {
+    "node": ">=20",
+    "pnpm": ">=9"
+  },
+  "scripts": {
+    "dev:worker": "pnpm --filter worker dev",
+    "dev:site": "pnpm --filter site dev",
+    "build:site": "pnpm --filter site build",
+    "deploy:worker": "pnpm --filter worker deploy",
+    "deploy:site": "pnpm --filter site deploy"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "sharp",
+      "workerd"
+    ]
+  }
+}

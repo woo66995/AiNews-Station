@@ -1,0 +1,20 @@
+{
+  "name": "worker",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "db:migrate": "wrangler d1 execute ainews-db --file=migrations/0001_init.sql",
+    "db:migrate:local": "wrangler d1 execute ainews-db --local --file=migrations/0001_init.sql",
+    "types": "wrangler types"
+  },
+  "dependencies": {
+    "shared": "workspace:*"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250516.0",
+    "typescript": "^5.8.3",
+    "wrangler": "^4.14.4"
+  }
+}

@@ -1,0 +1,87 @@
+---
+import Base from '../../layouts/Base.astro';
+import ArticleCard from '../../components/ArticleCard.astro';
+import { getArticles } from '../../lib/api';
+
+const tag = Astro.params.tag!;
+const { articles } = await getArticles({ tag, limit: 50 });
+---
+
+<Base title={`#${tag}`}>
+  <div class="mb-8">
+    <a href="/" class="inline-flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors mb-4">
+      ← 返回首页
+    </a>
+    <div class="flex items-center justify-between mb-2">
+      <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
+        <span class="text-brand-500">#</span>{tag}
+      </h1>
+      <!-- View Toggle -->
+      <div class="hidden sm:flex items-center bg-gray-100 dark:bg-gray-800 rounded-lg p-1" id="view-toggle">
+        <button data-view="grid" class="view-btn p-1.5 rounded-md text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors" title="卡片视图">
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M4 4h6v6H4V4zm10 0h6v6h-6V4zM4 14h6v6H4v-6zm10 0h6v6h-6v-6z"/></svg>
+        </button>
+        <button data-view="list" class="view-btn p-1.5 rounded-md text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors" title="列表视图">
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M4 6h2v2H4V6zm4 0h12v2H8V6zm-4 5h2v2H4v-2zm4 0h12v2H8v-2zm-4 5h2v2H4v-2zm4 0h12v2H8v-2z"/></svg>
+        </button>
+      </div>
+    </div>
+    <p class="text-gray-600 dark:text-gray-400">
+      包含标签 "{tag}" 的文章，共 {articles.length} 篇。
+    </p>
+  </div>
+
+  <div id="article-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 transition-all duration-300">
+    {articles.length === 0 ? (
+      <div class="col-span-full py-12 text-center text-gray-500 border border-dashed border-gray-300 dark:border-gray-800 rounded-xl">
+        暂无该标签的文章。
+      </div>
+    ) : (
+      articles.map((article) => <ArticleCard article={article} />)
+    )}
+  </div>
+</Base>
+
+<script>
+  function setupViewToggle() {
+    const container = document.getElementById('article-container');
+    const btns = document.querySelectorAll('.view-btn');
+    if (!container || btns.length === 0) return;
+
+    const savedView = localStorage.getItem('ainews-view') || 'grid';
+
+    function applyView(view: string) {
+      if (view === 'list') {
+        container?.classList.remove('grid', 'grid-cols-1', 'md:grid-cols-2', 'lg:grid-cols-3', 'gap-6');
+        container?.classList.add('flex', 'flex-col', 'gap-4', 'list-view');
+      } else {
+        container?.classList.remove('flex', 'flex-col', 'gap-4', 'list-view');
+        container?.classList.add('grid', 'grid-cols-1', 'md:grid-cols-2', 'lg:grid-cols-3', 'gap-6');
+      }
+
+      btns.forEach(btn => {
+        const btnView = (btn as HTMLElement).dataset.view;
+        if (btnView === view) {
+          btn.classList.add('bg-white', 'dark:bg-gray-700', 'text-gray-900', 'dark:text-white', 'shadow-sm');
+          btn.classList.remove('text-gray-500');
+        } else {
+          btn.classList.remove('bg-white', 'dark:bg-gray-700', 'text-gray-900', 'dark:text-white', 'shadow-sm');
+          btn.classList.add('text-gray-500');
+        }
+      });
+
+      localStorage.setItem('ainews-view', view);
+    }
+
+    applyView(savedView);
+
+    btns.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const view = (e.currentTarget as HTMLElement).dataset.view;
+        if (view) applyView(view);
+      });
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', setupViewToggle);
+</script>

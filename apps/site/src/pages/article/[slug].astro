@@ -1,0 +1,121 @@
+---
+import Base from '../../layouts/Base.astro';
+import { formatDate, SOURCE_LABELS, parseTags } from '../../lib/data';
+import { getArticle as fetchArticle, getRelatedArticles, getTrends, getAllTags } from '../../lib/api';
+import RelatedArticles from '../../components/RelatedArticles.astro';
+import TrendRadar from '../../components/TrendRadar.astro';
+import TagCloud from '../../components/TagCloud.astro';
+
+const { slug } = Astro.params;
+const article = await fetchArticle(slug!);
+
+if (!article) {
+  return Astro.redirect('/404');
+}
+
+const tags = parseTags(article.tags as string | undefined);
+const sourceName = SOURCE_LABELS[article.source] ?? article.source;
+const title = article.title_zh || article.title;
+const date = formatDate(article.published_at ?? article.fetched_at);
+const related = article.slug ? await getRelatedArticles(article.slug) : [];
+const trends = await getTrends();
+const allTags = await getAllTags().catch(() => []);
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'NewsArticle',
+  headline: title,
+  datePublished: article.published_at ?? article.fetched_at,
+  author: [{ '@type': 'Organization', name: sourceName }],
+};
+---
+
+<Base
+  title={title}
+  description={article.summary_zh}
+  activeCategory={article.category}
+  jsonLd={jsonLd}
+>
+  <div class="max-w-3xl mx-auto mb-6">
+    <a
+      href="/"
+      class="inline-flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-brand-600 dark:text-gray-400 dark:hover:text-brand-400 transition-colors"
+    >
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+      </svg>
+      <span>返回首页</span>
+    </a>
+  </div>
+
+  <article class="max-w-3xl mx-auto bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-6 sm:p-10 mb-8">
+    <header class="mb-8 border-b border-gray-100 dark:border-gray-800 pb-8">
+      <div class="flex items-center gap-3 mb-4 flex-wrap">
+        <span class="badge-source">{sourceName}</span>
+        {date && <time class="text-sm text-gray-500" datetime={article.published_at}>{date}</time>}
+      </div>
+
+      <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-50 leading-tight mb-4">
+        {title}
+      </h1>
+
+      {tags.length > 0 && (
+        <div class="flex flex-wrap gap-2">
+          {tags.map((tag) => (
+            <a href={`/tag/${tag}/`} class="badge bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700 transition-colors">
+              #{tag}
+            </a>
+          ))}
+        </div>
+      )}
+    </header>
+
+    <div class="prose prose-brand dark:prose-invert prose-lg max-w-none mb-10">
+      <p class="text-xl leading-relaxed text-gray-700 dark:text-gray-300 font-medium">
+        {article.summary_zh}
+      </p>
+    </div>
+
+    <footer class="mt-8 pt-6 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
+      <span>原文语言: {article.source === 'v2ex' || article.source === 'minority' ? '中文' : 'English'}</span>
+      <a
+        href={article.url}
+        target="_blank"
+        rel="noopener nofollow"
+        class="inline-flex items-center gap-1 text-gray-500 hover:text-brand-600 dark:text-gray-400 dark:hover:text-brand-400 font-medium transition-colors"
+      >
+        <span>阅读原文</span>
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+        </svg>
+      </a>
+    </footer>
+
+    <!-- Unobtrusive Telegram CTA -->
+    <div class="mt-8 p-4 sm:p-5 bg-gray-50/50 dark:bg-gray-800/30 border border-gray-100 dark:border-gray-800 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div class="flex items-start gap-3">
+        <div class="w-10 h-10 rounded-full bg-brand-100 dark:bg-brand-900/30 flex items-center justify-center shrink-0 text-brand-600 dark:text-brand-400">
+          <svg class="w-5 h-5 ml-[-2px]" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.248l-2.04 9.604c-.148.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L7.09 14.362l-2.953-.924c-.642-.2-.655-.642.136-.953l11.532-4.448c.535-.194 1.003.13.757.21z"/>
+          </svg>
+        </div>
+        <div>
+          <h3 class="text-sm font-bold text-gray-900 dark:text-gray-100 mb-0.5">获取每日 AI 情报与羊毛福利</h3>
+          <p class="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+            加入 Telegram 频道 <span class="font-medium text-gray-700 dark:text-gray-300">@ainews_Go</span>，第一时间接收精选资讯推送。
+          </p>
+        </div>
+      </div>
+      <a href="https://t.me/ainews_Go" target="_blank" rel="noopener" class="shrink-0 inline-flex justify-center items-center px-4 py-2 rounded-lg text-sm font-semibold bg-brand-50 text-brand-600 hover:bg-brand-100 dark:bg-brand-900/30 dark:text-brand-400 dark:hover:bg-brand-900/50 transition-colors">
+        立即加入
+      </a>
+    </div>
+  </article>
+
+  <RelatedArticles articles={related} />
+
+  <div class="max-w-3xl mx-auto mt-12">
+    {trends.length > 0 && <TrendRadar trends={trends} />}
+    {allTags.length > 0 && <TagCloud tags={allTags} maxTags={50} />}
+  </div>
+</Base>

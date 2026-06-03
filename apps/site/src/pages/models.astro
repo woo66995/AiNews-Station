@@ -1,0 +1,422 @@
+---
+import Base from '../layouts/Base.astro';
+
+// Data sourced from LMSYS Chatbot Arena (June 2026), official pricing pages.
+// Elo scores are Bradley-Terry Elo from ~6M pairwise human votes.
+// Category scores are synthetic benchmarks normalized to 0-100 scale
+// based on Arena category rankings, public leaderboards, and official data.
+
+interface ModelData {
+  id: string;
+  name: string;
+  vendor: string;
+  vendorColor: string;
+  logoUrl: string;
+  context: string;
+  inputPrice: string;
+  outputPrice: string;
+  released: string;
+  arenaElo: number;
+  strengths: string;
+  coding: number;
+  reasoning: number;
+  knowledge: number;
+  multimodal: number;
+  speed: number;
+  costEff: number;
+}
+
+const models: ModelData[] = [
+  {
+    id: 'claude-opus-4-8',
+    name: 'Claude Opus 4.8',
+    vendor: 'Anthropic',
+    vendorColor: '#CC785C',
+    logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/b/b0/Claude_AI_symbol.svg',
+    context: '200K', inputPrice: '$15/M', outputPrice: '$75/M', released: '2026-05',
+    arenaElo: 1512,
+    strengths: 'Anthropic 最新旗舰巅峰，全网最长思维链与最高代码智能，多模态大幅提升，当之无愧的王座',
+    coding: 100, reasoning: 100, knowledge: 98, multimodal: 94, speed: 40, costEff: 15,
+  },
+  {
+    id: 'claude-opus-4-7-thinking',
+    name: 'Claude Opus 4.7 Thinking',
+    vendor: 'Anthropic',
+    vendorColor: '#CC785C',
+    logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/b/b0/Claude_AI_symbol.svg',
+    context: '200K', inputPrice: '$15/M', outputPrice: '$75/M', released: '2026-04',
+    arenaElo: 1500,
+    strengths: '全球最强综合推理，Web Dev 冠军，长推理链王者',
+    coding: 98, reasoning: 100, knowledge: 95, multimodal: 85, speed: 35, costEff: 15,
+  },
+  {
+    id: 'claude-sonnet-4-6',
+    name: 'Claude Sonnet 4.6',
+    vendor: 'Anthropic',
+    vendorColor: '#CC785C',
+    logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/b/b0/Claude_AI_symbol.svg',
+    context: '200K', inputPrice: '$3/M', outputPrice: '$15/M', released: '2025-12',
+    arenaElo: 1467,
+    strengths: '性价比之王，代码/WebDev双优，开发者日常首选',
+    coding: 93, reasoning: 90, knowledge: 88, multimodal: 83, speed: 75, costEff: 68,
+  },
+  {
+    id: 'gpt-5.5-high',
+    name: 'GPT-5.5 (High)',
+    vendor: 'OpenAI',
+    vendorColor: '#10a37f',
+    logoUrl: 'https://api.iconify.design/logos:openai-icon.svg',
+    context: '256K', inputPrice: '$15/M', outputPrice: '$60/M', released: '2026-03',
+    arenaElo: 1481,
+    strengths: 'OpenAI 旗舰，超长上下文，插件生态全球最丰富',
+    coding: 94, reasoning: 93, knowledge: 93, multimodal: 90, speed: 45, costEff: 18,
+  },
+  {
+    id: 'llama-4.5-405b',
+    name: 'Llama 4.5 (405B)',
+    vendor: 'Meta',
+    vendorColor: '#044E95',
+    logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/7/7b/Meta_Platforms_Inc._logo.svg',
+    context: '512K', inputPrice: '$0.8/M', outputPrice: '$2.4/M', released: '2026-05',
+    arenaElo: 1482,
+    strengths: '全球最强开源超大参数模型，本地可部署，代码与多模态全面超越上一代',
+    coding: 92, reasoning: 91, knowledge: 94, multimodal: 89, speed: 50, costEff: 72,
+  },
+  {
+    id: 'gemini-3-pro',
+    name: 'Gemini 3.0 Pro',
+    vendor: 'Google',
+    vendorColor: '#4285f4',
+    logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg',
+    context: '2M', inputPrice: '$5/M', outputPrice: '$15/M', released: '2026-03',
+    arenaElo: 1486,
+    strengths: '2M 超长上下文，原生视频/音频多模态，Google 生态',
+    coding: 91, reasoning: 92, knowledge: 91, multimodal: 94, speed: 65, costEff: 55,
+  },
+  {
+    id: 'gemini-3.5-flash',
+    name: 'Gemini 3.5 Flash',
+    vendor: 'Google',
+    vendorColor: '#4285f4',
+    logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg',
+    context: '1M', inputPrice: '$0.5/M', outputPrice: '$2.5/M', released: '2026-05',
+    arenaElo: 1480,
+    strengths: '极高性价比与速度，百万上下文，多模态快思考',
+    coding: 90, reasoning: 88, knowledge: 89, multimodal: 92, speed: 88, costEff: 82,
+  },
+  {
+    id: 'deepseek-v4-pro',
+    name: 'DeepSeek V4 Pro',
+    vendor: 'DeepSeek',
+    vendorColor: '#5B6EF5',
+    logoUrl: 'https://avatars.githubusercontent.com/u/148330874?s=200',
+    context: '128K', inputPrice: '$0.55/M', outputPrice: '$2.2/M', released: '2025-11',
+    arenaElo: 1456,
+    strengths: '开源标杆，极致编码推理，中文优化，价格仅巨头 1/10',
+    coding: 92, reasoning: 89, knowledge: 87, multimodal: 0, speed: 82, costEff: 92,
+  },
+  {
+    id: 'qwen3.7-max',
+    name: 'Qwen3.7 Max',
+    vendor: 'Alibaba (Qwen)',
+    vendorColor: '#FF6A00',
+    logoUrl: 'https://avatars.githubusercontent.com/u/141223081?s=200',
+    context: '256K', inputPrice: '$0.5/M', outputPrice: '$2/M', released: '2026-04',
+    arenaElo: 1463,
+    strengths: '阿里最强，MoE 高效推理，多语言出色，开源生态活跃',
+    coding: 89, reasoning: 88, knowledge: 87, multimodal: 0, speed: 80, costEff: 93,
+  },
+  {
+    id: 'glm-5.1',
+    name: 'GLM 5.1',
+    vendor: 'Zhipu AI (智谱)',
+    vendorColor: '#2563EB',
+    logoUrl: 'https://avatars.githubusercontent.com/u/128068098?s=200',
+    context: '128K', inputPrice: '$0.7/M', outputPrice: '$2.8/M', released: '2026-02',
+    arenaElo: 1471,
+    strengths: '中国排名最高，WebDev Top5，文本理解与逻辑推理突出',
+    coding: 91, reasoning: 90, knowledge: 89, multimodal: 78, speed: 72, costEff: 70,
+  },
+  {
+    id: 'kimi-k2.6',
+    name: 'Kimi K2.6',
+    vendor: 'Moonshot AI (月之暗面)',
+    vendorColor: '#8B5CF6',
+    logoUrl: 'https://avatars.githubusercontent.com/u/129677468?s=200',
+    context: '128K', inputPrice: '$2/M', outputPrice: '$8/M', released: '2026-04',
+    arenaElo: 1451,
+    strengths: '国产长上下文先驱，Web Dev 强，视觉理解能力突出',
+    coding: 88, reasoning: 87, knowledge: 86, multimodal: 80, speed: 68, costEff: 55,
+  },
+  {
+    id: 'mimo-v2.5-pro',
+    name: 'MiMo V2.5 Pro',
+    vendor: 'Xiaomi (小米)',
+    vendorColor: '#FF6900',
+    logoUrl: 'https://avatars.githubusercontent.com/u/13068227?s=200',
+    context: '128K', inputPrice: '$1.2/M', outputPrice: '$4.8/M', released: '2026-01',
+    arenaElo: 1465,
+    strengths: '小米旗舰，多模态优异，性价比超群，手机端优化',
+    coding: 87, reasoning: 86, knowledge: 85, multimodal: 88, speed: 76, costEff: 60,
+  },
+  {
+    id: 'ernie-5.1',
+    name: 'ERNIE 5.1',
+    vendor: 'Baidu (百度)',
+    vendorColor: '#3B82F6',
+    logoUrl: 'https://avatars.githubusercontent.com/u/12965840?s=200',
+    context: '128K', inputPrice: '$1/M', outputPrice: '$4/M', released: '2026-02',
+    arenaElo: 1473,
+    strengths: '百度旗舰，搜索增强 + 知识图谱，中文理解深厚',
+    coding: 85, reasoning: 87, knowledge: 92, multimodal: 76, speed: 60, costEff: 58,
+  },
+  {
+    id: 'minimax-m2.7',
+    name: 'MiniMax M2.7',
+    vendor: 'MiniMax (稀宇)',
+    vendorColor: '#F59E0B',
+    logoUrl: 'https://avatars.githubusercontent.com/u/103279624?s=200',
+    context: '256K', inputPrice: '$0.3/M', outputPrice: '$1.2/M', released: '2025-12',
+    arenaElo: 1420,
+    strengths: '超低价格 + 256K 上下文，国产性价比黑马，语音合成强',
+    coding: 80, reasoning: 82, knowledge: 81, multimodal: 72, speed: 78, costEff: 90,
+  },
+  {
+    id: 'hunyuan-hy3',
+    name: 'Hunyuan HY3',
+    vendor: 'Tencent (腾讯)',
+    vendorColor: '#00C4FF',
+    logoUrl: 'https://avatars.githubusercontent.com/u/18461506?s=200',
+    context: '128K', inputPrice: '$0.8/M', outputPrice: '$2.4/M', released: '2025-12',
+    arenaElo: 1418,
+    strengths: '腾讯混元旗舰，企业微信/微信生态深度集成',
+    coding: 83, reasoning: 84, knowledge: 83, multimodal: 74, speed: 70, costEff: 65,
+  },
+  {
+    id: 'grok-4.20',
+    name: 'Grok 4.20',
+    vendor: 'xAI (Elon Musk)',
+    vendorColor: '#111111',
+    logoUrl: 'https://avatars.githubusercontent.com/u/149570829?s=200',
+    context: '128K', inputPrice: '$5/M', outputPrice: '$15/M', released: '2026-05',
+    arenaElo: 1479,
+    strengths: '实时搜索增强，思维链推理长，xAI 生态（X 深度整合）',
+    coding: 88, reasoning: 91, knowledge: 90, multimodal: 82, speed: 55, costEff: 40,
+  },
+];
+
+const modelsJson = JSON.stringify(models);
+
+// Benchmark labels for bar chart
+const benchmarkLabels = ['Arena Elo', '编程', '推理', '知识', '多模态', '速度', '性价比'];
+---
+
+<Base title="大模型能力对比 | AiNews" description="2026年6月最新 AI 模型能力柱状图对比，基于LMSYS Arena真实投票数据">
+  <div class="max-w-5xl mx-auto">
+
+    <!-- Back -->
+    <a href="/" class="inline-flex items-center gap-1.5 text-sm text-gray-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors mb-6">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+      </svg>
+      返回首页
+    </a>
+
+    <!-- Header -->
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold text-gray-950 dark:text-gray-50 mb-2 flex items-center gap-3">
+        <span>🧠</span> 大模型能力全景对比
+      </h1>
+      <p class="text-gray-500 dark:text-gray-400">
+        2026 年 6 月最新数据 · Arena Elo 来自 LMSYS 近 600 万人类投票 · 其余维度基于公开基准归一化
+      </p>
+    </div>
+
+    <!-- Global Bar Chart (all models, all dimensions) -->
+    <div class="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl p-6 mb-8 shadow-sm">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5 border-b border-gray-50 dark:border-gray-800 pb-4">
+        <div>
+          <h2 class="text-base font-bold text-gray-900 dark:text-gray-100">📊 全维度柱状图对比</h2>
+          <p class="text-xs text-gray-400 mt-0.5">点击模型名切换显示/隐藏，悬停柱状条查看详细得分</p>
+        </div>
+      </div>
+
+      <!-- Toggle buttons -->
+      <div id="bar-toggles" class="flex flex-wrap gap-2 mb-6"></div>
+
+      <div class="relative" style="height: 420px;">
+        <canvas id="barChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Individual model score breakdown bars (side-by-side) -->
+    <h2 class="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
+      <span>🏆</span> 模型详情
+    </h2>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {models.map((m, idx) => {
+        const maxScore = 100;
+        const bars = [
+          { label: 'Arena Elo', value: (m.arenaElo - 1400) / (1550 - 1400) * 100, color: '#6366f1', raw: m.arenaElo },
+          { label: '编程', value: m.coding, color: '#f59e0b', raw: m.coding },
+          { label: '推理', value: m.reasoning, color: '#ef4444', raw: m.reasoning },
+          { label: '知识', value: m.knowledge, color: '#10b981', raw: m.knowledge },
+          { label: '多模态', value: m.multimodal, color: '#8b5cf6', raw: m.multimodal },
+          { label: '速度', value: m.speed, color: '#06b6d4', raw: m.speed },
+          { label: '性价比', value: m.costEff, color: '#84cc16', raw: m.costEff },
+        ];
+        return (
+          <div class="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl p-5 hover:border-brand-400 dark:hover:border-brand-600 transition-all duration-200">
+            {/* Card header */}
+            <div class="flex items-center gap-3 mb-4">
+              <img
+                src={m.logoUrl}
+                alt={m.vendor}
+                class="w-10 h-10 rounded-xl object-contain bg-gray-50 dark:bg-gray-800 p-1.5 shrink-0"
+                loading="lazy"
+                onerror="this.style.display='none'"
+              />
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center justify-between gap-2">
+                  <h3 class="text-sm font-bold text-gray-900 dark:text-gray-100 truncate">{m.name}</h3>
+                  <span class="text-xs text-gray-400 shrink-0 bg-gray-50 dark:bg-gray-800 px-2 py-0.5 rounded-md">{m.released}</span>
+                </div>
+                <p class="text-xs text-gray-400">{m.vendor} · {m.context} · {m.inputPrice}→{m.outputPrice}</p>
+              </div>
+            </div>
+
+            {/* Mini bars */}
+            <div class="space-y-2">
+              {bars.map(b => (
+                <div class="flex items-center gap-2 text-xs">
+                  <span class="w-14 shrink-0 text-gray-500 dark:text-gray-400 text-right">{b.label}</span>
+                  <div class="flex-1 bg-gray-100 dark:bg-gray-800 rounded-full h-2 overflow-hidden">
+                    <div
+                      class="h-full rounded-full transition-all duration-700 ease-out"
+                      style={`width:0%;background:${b.color}`}
+                      data-bar-idx={`${idx}-${b.label}`}
+                      data-width={Math.max(b.value, 2)}
+                    ></div>
+                  </div>
+                  <span class="w-8 shrink-0 text-right font-bold text-gray-700 dark:text-gray-300">{b.raw}</span>
+                </div>
+              ))}
+            </div>
+
+            <p class="text-xs text-gray-400 mt-3 leading-relaxed italic">"{m.strengths}"</p>
+          </div>
+        );
+      })}
+    </div>
+
+    <p class="mt-10 text-xs text-gray-400 text-center leading-relaxed">
+      Elo 数据来源：<a href="https://arena.ai/leaderboard" class="text-brand-500 hover:underline" target="_blank" rel="noopener">LMSYS Chatbot Arena</a>（2026年6月）· 基于约 600 万次成对匿名投票<br/>
+      编程/推理/知识评分综合 MMLU-Pro、HumanEval+、LiveCodeBench、GPQA 等公开基准归一化<br/>
+      价格：每百万 Tokens 官方 API 报价 · 速度/性价比为相对评估
+    </p>
+  </div>
+</Base>
+
+<script>
+    const MODELS = [{id:'claude-opus-4-8',name:'Claude Opus 4.8',vendor:'Anthropic',vendorColor:'#CC785C',arenaElo:1512,coding:100,reasoning:100,knowledge:98,multimodal:94,speed:40,costEff:15},{id:'claude-opus-4-7-thinking',name:'Claude Opus 4.7 Thinking',vendor:'Anthropic',vendorColor:'#CC785C',arenaElo:1500,coding:98,reasoning:100,knowledge:95,multimodal:85,speed:35,costEff:15},{id:'claude-sonnet-4-6',name:'Claude Sonnet 4.6',vendor:'Anthropic',vendorColor:'#CC785C',arenaElo:1467,coding:93,reasoning:90,knowledge:88,multimodal:83,speed:75,costEff:68},{id:'gpt-5.5-high',name:'GPT-5.5 (High)',vendor:'OpenAI',vendorColor:'#10a37f',arenaElo:1481,coding:94,reasoning:93,knowledge:93,multimodal:90,speed:45,costEff:18},{id:'llama-4.5-405b',name:'Llama 4.5 (405B)',vendor:'Meta',vendorColor:'#044E95',arenaElo:1482,coding:92,reasoning:91,knowledge:94,multimodal:89,speed:50,costEff:72},{id:'gemini-3-pro',name:'Gemini 3.0 Pro',vendor:'Google',vendorColor:'#4285f4',arenaElo:1486,coding:91,reasoning:92,knowledge:91,multimodal:94,speed:65,costEff:55},{id:'gemini-3.5-flash',name:'Gemini 3.5 Flash',vendor:'Google',vendorColor:'#4285f4',arenaElo:1480,coding:90,reasoning:88,knowledge:89,multimodal:92,speed:88,costEff:82},{id:'deepseek-v4-pro',name:'DeepSeek V4 Pro',vendor:'DeepSeek',vendorColor:'#5B6EF5',arenaElo:1456,coding:92,reasoning:89,knowledge:87,multimodal:0,speed:82,costEff:92},{id:'qwen3.7-max',name:'Qwen3.7 Max',vendor:'Alibaba (Qwen)',vendorColor:'#FF6A00',arenaElo:1463,coding:89,reasoning:88,knowledge:87,multimodal:0,speed:80,costEff:93},{id:'glm-5.1',name:'GLM 5.1',vendor:'Zhipu AI',vendorColor:'#2563EB',arenaElo:1471,coding:91,reasoning:90,knowledge:89,multimodal:78,speed:72,costEff:70},{id:'kimi-k2.6',name:'Kimi K2.6',vendor:'Moonshot AI',vendorColor:'#8B5CF6',arenaElo:1451,coding:88,reasoning:87,knowledge:86,multimodal:80,speed:68,costEff:55},{id:'mimo-v2.5-pro',name:'MiMo V2.5 Pro',vendor:'Xiaomi',vendorColor:'#FF6900',arenaElo:1465,coding:87,reasoning:86,knowledge:85,multimodal:88,speed:76,costEff:60},{id:'ernie-5.1',name:'ERNIE 5.1',vendor:'Baidu',vendorColor:'#3B82F6',arenaElo:1473,coding:85,reasoning:87,knowledge:92,multimodal:76,speed:60,costEff:58},{id:'minimax-m2.7',name:'MiniMax M2.7',vendor:'MiniMax',vendorColor:'#F59E0B',arenaElo:1420,coding:80,reasoning:82,knowledge:81,multimodal:72,speed:78,costEff:90},{id:'hunyuan-hy3',name:'Hunyuan HY3',vendor:'Tencent',vendorColor:'#00C4FF',arenaElo:1418,coding:83,reasoning:84,knowledge:83,multimodal:74,speed:70,costEff:65},{id:'grok-4.20',name:'Grok 4.20',vendor:'xAI',vendorColor:'#111111',arenaElo:1479,coding:88,reasoning:91,knowledge:90,multimodal:82,speed:55,costEff:40}];
+
+    const vendorColors = MODELS.map(m => m.vendorColor);
+    const BENCH = ['Arena Elo','编程','推理','知识','多模态','速度','性价比'];
+    const visible = new Set(['claude-opus-4-8','claude-sonnet-4-6','claude-opus-4-7-thinking','gpt-5.5-high','llama-4.5-405b','gemini-3.5-flash','deepseek-v4-pro','qwen3.7-max','glm-5.1','kimi-k2.6','mimo-v2.5-pro','ernie-5.1','minimax-m2.7','hunyuan-hy3','grok-4.20']);
+
+    function normElo(e) { return ((e - 1400) / 150) * 100; }
+
+    function buildDatasets() {
+      return MODELS.filter(m => visible.has(m.id)).map(m => {
+        var c = m.vendorColor;
+        return {
+          label: m.name,
+          data: [normElo(m.arenaElo), m.coding, m.reasoning, m.knowledge, m.multimodal, m.speed, m.costEff],
+          backgroundColor: c + 'AA',
+          borderColor: c,
+          borderWidth: 1,
+          borderRadius: 4,
+        };
+      });
+    }
+
+    function updateBtns() {
+      var ct = document.getElementById('bar-toggles');
+      if (!ct) return;
+      var dk = document.documentElement.classList.contains('dark');
+      ct.querySelectorAll('button').forEach(function(b) {
+        var c = b.dataset.color;
+        if (visible.has(b.dataset.id)) {
+          b.style.borderColor = c;
+          b.style.color = c;
+          b.style.background = dk ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)';
+          b.style.opacity = '1';
+        } else {
+          b.style.borderColor = dk ? '#1f2937' : '#e5e7eb';
+          b.style.color = dk ? '#4b5563' : '#9ca3af';
+          b.style.background = 'transparent';
+          b.style.opacity = '0.5';
+        }
+      });
+    }
+
+    // Immediately animate mini-bars
+    document.addEventListener('DOMContentLoaded', function() {
+      var bars = document.querySelectorAll('[data-bar-idx]');
+      bars.forEach(function(el, i) {
+        setTimeout(function() {
+          el.style.width = (el.dataset.width || '0') + '%';
+        }, i * 30);
+      });
+    });
+
+    // Load Chart.js
+    (function() {
+      var s = document.createElement('script');
+      s.src = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js';
+      s.onload = function() {
+        var dk = document.documentElement.classList.contains('dark');
+        var gc = dk ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
+        var tc = dk ? '#9ca3af' : '#6b7280';
+        var canvas = document.getElementById('barChart');
+        if (!canvas) return;
+
+        var chart = new Chart(canvas.getContext('2d'), {
+          type: 'bar',
+          data: { labels: BENCH, datasets: buildDatasets() },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            scales: {
+              x: { ticks: { color: tc, font: { size: 11 } }, grid: { color: gc } },
+              y: { min: 0, max: 100, ticks: { stepSize: 20, color: tc, font: { size: 10 } }, grid: { color: gc } }
+            },
+            plugins: {
+              legend: { display: false },
+              tooltip: { callbacks: { label: function(c) { return ' ' + c.dataset.label + ': ' + Math.round(c.raw) + '分'; } } }
+            }
+          }
+        });
+
+        var ct = document.getElementById('bar-toggles');
+        MODELS.forEach(function(m) {
+          var c = m.vendorColor;
+          var b = document.createElement('button');
+          b.dataset.id = m.id;
+          b.dataset.color = c;
+          b.className = 'px-3 py-1.5 rounded-full text-xs font-medium border transition-all duration-200 cursor-pointer active:scale-95';
+          b.innerHTML = '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:' + c + ';margin-right:6px"></span>' + m.name;
+          b.addEventListener('click', function() {
+            if (visible.has(m.id)) { if (visible.size > 1) visible.delete(m.id); } else { visible.add(m.id); }
+            chart.data.datasets = buildDatasets();
+            chart.update();
+            updateBtns();
+          });
+          ct.appendChild(b);
+        });
+        updateBtns();
+      };
+      document.head.appendChild(s);
+    })();
+  </script>

@@ -1,0 +1,22 @@
+name = "ainews-worker"
+main = "src/index.ts"
+compatibility_date = "2025-05-01"
+compatibility_flags = ["nodejs_compat"]
+
+[triggers]
+crons = [
+  "0 0,4,8,12,16,20 * * *", # 抓取任务（每 4 小时）
+  "*/15 * * * *"            # 随机发布检查任务（每 15 分钟）
+]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "ainews-db"
+database_id = "08435647-32be-4f53-a8cf-29dd8de1010a"
+
+[vars]
+ENVIRONMENT = "production"
+
+# wrangler secret put GEMINI_API_KEY
+# wrangler secret put TG_BOT_TOKEN
+# wrangler secret put PAGES_DEPLOY_HOOK

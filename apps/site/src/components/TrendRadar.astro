@@ -1,0 +1,80 @@
+---
+import type { TrendItem } from '../lib/api';
+
+interface Props {
+  trends: TrendItem[];
+}
+
+const { trends } = Astro.props;
+const maxCount = Math.max(...trends.map(t => t.count), 1);
+---
+
+<div class="card mb-8 shadow-sm bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl p-6">
+  <div class="flex items-center justify-between mb-5">
+    <div>
+      <h2 class="text-base font-bold text-gray-950 dark:text-gray-50 flex items-center gap-2">
+        <span class="text-brand-500">📡</span> 本周热词趋势
+      </h2>
+      <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">基于最近 7 天全网 AI 资讯中高频词的出现频率统计</p>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3.5">
+    {trends.slice(0, 10).map((item, i) => {
+      const pct = Math.round((item.count / maxCount) * 100);
+      const isNew = item.change === 999;
+      const isUp = item.change > 0 && !isNew;
+      const isDown = item.change < 0;
+      return (
+        <a
+          href={`/tag/${item.tag}/`}
+          class="group flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-gray-800/40 rounded-xl p-2 -mx-2 transition-all duration-200"
+        >
+          <span class={`text-xs font-semibold w-5 text-right shrink-0 ${i < 3 ? 'text-brand-500 font-bold' : 'text-gray-400'}`}>
+            {String(i + 1).padStart(2, '0')}
+          </span>
+
+          <span class="text-sm font-semibold text-gray-700 dark:text-gray-300 w-24 shrink-0 group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors truncate">
+            #{item.tag}
+          </span>
+
+          <div class="flex-1 bg-gray-100 dark:bg-gray-800 rounded-full h-1.5 overflow-hidden">
+            <div
+              class="trend-bar h-full bg-gradient-to-r from-brand-400 to-brand-600 rounded-full transition-all duration-1000 ease-out"
+              data-pct={pct}
+              style="width: 0%"
+            ></div>
+          </div>
+
+          <span class="text-xs font-medium text-gray-400 dark:text-gray-500 w-8 text-right shrink-0">
+            {item.count}次
+          </span>
+
+          <span class={`text-xs w-16 text-right shrink-0 font-bold ${isNew ? 'text-orange-500' : isUp ? 'text-green-500' : isDown ? 'text-gray-400' : 'text-gray-400'}`}>
+            {isNew ? '🆕 新上榜' : isUp ? `↑${item.change}%` : isDown ? `↓${Math.abs(item.change)}%` : '—'}
+          </span>
+        </a>
+      );
+    })}
+  </div>
+</div>
+
+<script>
+  // Animate progress bars
+  const animateBars = () => {
+    document.querySelectorAll('.trend-bar').forEach((el) => {
+      const bar = el as HTMLElement;
+      const pct = bar.dataset.pct ?? '0';
+      // Use standard requestAnimationFrame to ensure smooth timing
+      requestAnimationFrame(() => {
+        bar.style.width = pct + '%';
+      });
+    });
+  };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', animateBars);
+  } else {
+    animateBars();
+  }
+</script>

@@ -1,0 +1,142 @@
+---
+import '../styles/global.css';
+import ThemeToggle from '../components/ThemeToggle.astro';
+
+interface Props {
+  title: string;
+  description?: string;
+  ogImage?: string;
+  canonical?: string;
+  activeCategory?: string;
+  jsonLd?: object;
+}
+
+const {
+  title,
+  description = 'AI Coding、AI Agent、MCP 协议最新资讯，为中文开发者精选每日 AI 技术动态',
+  ogImage,
+  canonical,
+  activeCategory,
+  jsonLd,
+} = Astro.props;
+
+const siteUrl = 'https://ainews.pages.dev';
+const canonicalUrl = canonical ?? new URL(Astro.url.pathname, siteUrl).href;
+const fullTitle = title === 'AiNews' ? title : `${title} | AiNews`;
+---
+
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="generator" content={Astro.generator} />
+
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonicalUrl} />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonicalUrl} />
+    <meta property="og:site_name" content="AiNews" />
+    {ogImage && <meta property="og:image" content={ogImage} />}
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content={fullTitle} />
+    <meta name="twitter:description" content={description} />
+
+    <!-- JSON-LD -->
+    {jsonLd && <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />}
+
+    <!-- Theme: prevent flash by reading localStorage before paint -->
+    <script is:inline>
+      (function () {
+        const stored = localStorage.getItem('theme');
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (stored === 'dark' || (!stored && prefersDark)) {
+          document.documentElement.classList.add('dark');
+        }
+      })();
+    </script>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.bunny.net" />
+    <link
+      href="https://fonts.bunny.net/css?family=inter:400,500,600,700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+
+  <body class="min-h-screen flex flex-col">
+    <!-- Header -->
+    <header class="sticky top-0 z-50 bg-white/80 dark:bg-gray-950/80 backdrop-blur border-b border-gray-200 dark:border-gray-800">
+      <div class="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between gap-3">
+        <a href="/" class="flex items-center gap-2 font-bold text-lg text-gray-900 dark:text-gray-100 shrink-0">
+          <span class="text-brand-600">⚡</span>
+          AiNews
+        </a>
+
+        <div class="flex items-center gap-3 sm:gap-4">
+          <a
+            href="/daily/"
+            class="flex items-center gap-1 text-sm font-semibold text-gray-600 dark:text-gray-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors"
+          >
+            ⚡ 速览
+          </a>
+          <a
+            href="/models/"
+            class="flex items-center gap-1 text-sm font-semibold text-gray-600 dark:text-gray-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors"
+          >
+            🧠 模型
+          </a>
+          <a
+            href="https://t.me/AiNews007_bot"
+            target="_blank"
+            rel="noopener"
+            class="hidden sm:flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors"
+            aria-label="Telegram 订阅"
+          >
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.248l-2.04 9.604c-.148.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L7.09 14.362l-2.953-.924c-.642-.2-.655-.642.136-.953l11.532-4.448c.535-.194 1.003.13.757.21z"/>
+            </svg>
+            订阅
+          </a>
+          <ThemeToggle />
+        </div>
+      </div>
+    </header>
+
+    <!-- Main -->
+    <main class="flex-1 max-w-6xl mx-auto w-full px-4 py-8">
+      <slot />
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-gray-200 dark:border-gray-800 py-8 mt-8">
+      <div class="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-gray-500 dark:text-gray-400">
+        <div class="flex items-center gap-1">
+          <span>⚡ AiNews</span>
+          <span>·</span>
+          <span>AI 技术资讯，每天自动更新</span>
+        </div>
+        <div class="flex items-center gap-4">
+          <a href="/models/" class="hover:text-gray-700 dark:hover:text-gray-200">模型速查</a>
+          <a href="/daily/" class="hover:text-gray-700 dark:hover:text-gray-200">今日速览</a>
+          <a href="/sitemap.xml" class="hover:text-gray-700 dark:hover:text-gray-200">Sitemap</a>
+          <a
+            href="https://t.me/AiNews007_bot"
+            target="_blank"
+            rel="noopener"
+            class="hover:text-brand-600 dark:hover:text-brand-400"
+          >
+            Telegram
+          </a>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>
