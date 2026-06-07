@@ -26,7 +26,7 @@ export async function handleApiRequest(url: URL, db: D1Database): Promise<Respon
       const countQuery = query.replace('SELECT *', 'SELECT COUNT(*) as c');
       const totalRes = await db.prepare(countQuery).bind(...params).first<{ c: number }>();
 
-      query += ` ORDER BY published_at DESC, fetched_at DESC LIMIT ? OFFSET ?`;
+      query += ` ORDER BY COALESCE(scheduled_at, published_at, fetched_at) DESC LIMIT ? OFFSET ?`;
       params.push(limit, offset);
 
       const articlesRes = await db.prepare(query).bind(...params).all<Article>();
@@ -209,10 +209,10 @@ export async function handleApiRequest(url: URL, db: D1Database): Promise<Respon
       const bindings = tags.map(t => `%"${t}"%`);
 
       const related = await db.prepare(
-        `SELECT id, title_zh, title, slug, source, category, tags, published_at, fetched_at
+        `SELECT id, title_zh, title, slug, source, category, tags, published_at, fetched_at, scheduled_at
          FROM articles
          WHERE summary_status = 'done' AND slug != ? AND slug IS NOT NULL AND (${conditions})
-         ORDER BY published_at DESC, fetched_at DESC
+         ORDER BY COALESCE(scheduled_at, published_at, fetched_at) DESC
          LIMIT 5`
       ).bind(slug, ...bindings).all<Article>();
 
@@ -232,37 +232,36 @@ export async function handleApiRequest(url: URL, db: D1Database): Promise<Respon
         const endOfDay = new Date(`${targetDate}T23:59:59.999Z`).toISOString();
 
         res = await db.prepare(`
-          SELECT id, title, title_zh, summary_zh, source, category, tags, score, slug, published_at, fetched_at, url
+          SELECT id, title, title_zh, summary_zh, source, category, tags, score, slug, published_at, fetched_at, scheduled_at, url
           FROM articles
           WHERE summary_status = 'done'
             AND slug IS NOT NULL
             AND (
-              (published_at >= ? AND published_at <= ?) OR
-              (published_at IS NULL AND fetched_at >= ? AND fetched_at <= ?)
+              (COALESCE(scheduled_at, published_at, fetched_at) >= ? AND COALESCE(scheduled_at, published_at, fetched_at) <= ?)
             )
-          ORDER BY score DESC, published_at DESC, fetched_at DESC
+          ORDER BY score DESC, COALESCE(scheduled_at, published_at, fetched_at) DESC
           LIMIT 30
-        `).bind(startOfDay, endOfDay, startOfDay, endOfDay).all<Article>();
+        `).bind(startOfDay, endOfDay).all<Article>();
       } else {
         // Default behavior: last 48 hours, limit 15
         const since = new Date(Date.now() - 48 * 3600 * 1000).toISOString();
         res = await db.prepare(`
-          SELECT id, title, title_zh, summary_zh, source, category, tags, score, slug, published_at, fetched_at, url
+          SELECT id, title, title_zh, summary_zh, source, category, tags, score, slug, published_at, fetched_at, scheduled_at, url
           FROM articles
           WHERE summary_status = 'done'
             AND slug IS NOT NULL
-            AND (published_at >= ? OR fetched_at >= ?)
-          ORDER BY score DESC, published_at DESC, fetched_at DESC
+            AND COALESCE(scheduled_at, published_at, fetched_at) >= ?
+          ORDER BY score DESC, COALESCE(scheduled_at, published_at, fetched_at) DESC
           LIMIT 15
-        `).bind(since, since).all<Article>();
+        `).bind(since).all<Article>();
 
         if (res.results.length === 0) {
           res = await db.prepare(`
-            SELECT id, title, title_zh, summary_zh, source, category, tags, score, slug, published_at, fetched_at, url
+            SELECT id, title, title_zh, summary_zh, source, category, tags, score, slug, published_at, fetched_at, scheduled_at, url
             FROM articles
             WHERE summary_status = 'done'
               AND slug IS NOT NULL
-            ORDER BY published_at DESC, fetched_at DESC
+            ORDER BY COALESCE(scheduled_at, published_at, fetched_at) DESC
             LIMIT 15
           `).all<Article>();
         }
@@ -279,7 +278,7 @@ export async function handleApiRequest(url: URL, db: D1Database): Promise<Respon
     if (path === '/api/daily-archives') {
       // Return a list of available dates (YYYY-MM-DD format) that have articles
       const res = await db.prepare(`
-        SELECT DISTINCT substr(COALESCE(published_at, fetched_at), 1, 10) as dateStr
+        SELECT DISTINCT substr(COALESCE(scheduled_at, published_at, fetched_at), 1, 10) as dateStr
         FROM articles
         WHERE summary_status = 'done'
         ORDER BY dateStr DESC
