@@ -16,7 +16,7 @@ if (!article) {
 const tags = parseTags(article.tags as string | undefined);
 const sourceName = SOURCE_LABELS[article.source] ?? article.source;
 const title = article.title_zh || article.title;
-const date = formatDate(article.published_at ?? article.fetched_at);
+const date = formatDate(article.scheduled_at ?? article.published_at ?? article.fetched_at);
 const related = article.slug ? await getRelatedArticles(article.slug) : [];
 const trends = await getTrends();
 const allTags = await getAllTags().catch(() => []);

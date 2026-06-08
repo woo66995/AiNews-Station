@@ -10,7 +10,7 @@ const { article } = Astro.props;
 const tags = parseTags(article.tags as string | undefined);
 const category = getCategoryInfo(article.category ?? '');
 const source = SOURCE_LABELS[article.source] ?? article.source;
-const date = formatDateShort(article.published_at ?? article.fetched_at);
+const date = formatDateShort(article.scheduled_at ?? article.published_at ?? article.fetched_at);
 ---
 
 <article class="card group">
@@ -22,7 +22,7 @@ const date = formatDateShort(article.published_at ?? article.fetched_at);
       <span class="badge-source">{source}</span>
     </div>
     {date && (
-      <time class="text-xs text-gray-400 dark:text-gray-500 shrink-0" datetime={article.published_at}>
+      <time class="text-xs text-gray-400 dark:text-gray-500 shrink-0" datetime={article.scheduled_at ?? article.published_at ?? article.fetched_at}>
         {date}
       </time>
     )}

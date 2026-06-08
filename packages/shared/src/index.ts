@@ -13,6 +13,7 @@ export interface Article {
   summary_status: SummaryStatus;
   published_at?: string;
   fetched_at?: string;
+  scheduled_at?: string;
   is_featured?: number;
 }
 
