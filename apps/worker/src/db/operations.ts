@@ -74,7 +74,6 @@ export async function processPendingArticles(
 
   let processed = 0;
   let failed = 0;
-  const summarized: Article[] = [];
 
   for (const row of pending.results) {
     await sleep(INTER_REQUEST_DELAY_MS);

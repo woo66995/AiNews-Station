@@ -119,7 +119,7 @@ async function runFetchCycle(env: Env): Promise<void> {
   }
 
   // 4. Process with Gemini (batch of 10 to stay within Worker CPU time)
-  const { processed, failed, articles: summarized } =
+  const { processed, failed } =
     await processPendingArticles(env.DB, env.GEMINI_API_KEY, 10);
   console.log(`Summarized: ${processed} ok, ${failed} failed`);
 
