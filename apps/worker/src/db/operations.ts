@@ -1,8 +1,8 @@
 import type { Article } from 'shared';
-import { summarizeArticle } from '../ai/gemini';
+import { summarizeArticle, reviewAndPolishArticle } from '../ai/gemini';
 
 const BATCH_SIZE = 10; // articles per summarize batch
-const INTER_REQUEST_DELAY_MS = 5000; // 5000ms between Gemini calls to stay within free tier rate limit (~12 RPM)
+const INTER_REQUEST_DELAY_MS = 2500; // 2500ms between Gemini calls for high RPM quota
 
 export async function deduplicateArticles(
   db: D1Database,
@@ -64,13 +64,13 @@ export async function processPendingArticles(
 ): Promise<{ processed: number; failed: number; articles: Article[] }> {
   const pending = await db
     .prepare(
-      `SELECT id, title, source, content_raw, published_at, fetched_at FROM articles
+      `SELECT id, title, source, content_raw, published_at, fetched_at, score, is_featured FROM articles
        WHERE summary_status = 'pending'
        ORDER BY fetched_at DESC
        LIMIT ?`,
     )
     .bind(maxBatch)
-    .all<Pick<Article, 'id' | 'title' | 'source' | 'content_raw' | 'published_at' | 'fetched_at'>>();
+    .all<Pick<Article, 'id' | 'title' | 'source' | 'content_raw' | 'published_at' | 'fetched_at' | 'score' | 'is_featured'>>();
 
   let processed = 0;
   let failed = 0;
@@ -78,12 +78,13 @@ export async function processPendingArticles(
   for (const row of pending.results) {
     await sleep(INTER_REQUEST_DELAY_MS);
 
-    const result = await summarizeArticle(
+    // 阶段一：初代摘要提炼 (Gemini 3.5 Flash Lite)
+    const draftResult = await summarizeArticle(
       { title: row.title, source: row.source, content_raw: row.content_raw },
       apiKey,
     );
 
-    if (!result) {
+    if (!draftResult) {
       await db
         .prepare(`UPDATE articles SET summary_status = 'failed' WHERE id = ?`)
         .bind(row.id)
@@ -92,7 +93,16 @@ export async function processPendingArticles(
       continue;
     }
 
-    const slug = generateSlug(result.title_zh, row.id!, row.published_at ?? row.fetched_at);
+    // 阶段二：审核润色与去 AI 味处理 (Gemma 4 31B 或 Gemini 3.6 Flash 精提)
+    const isFeatured = (row.score ?? 0) >= 5 || (row.is_featured ?? 0) === 1;
+    const finalResult = await reviewAndPolishArticle(
+      draftResult,
+      row.source,
+      apiKey,
+      isFeatured,
+    );
+
+    const slug = generateSlug(finalResult.title_zh, row.id!, row.published_at ?? row.fetched_at);
 
     // Randomize publication time over the next 4 hours (the time until next fetch cycle)
     const delayMs = Math.floor(Math.random() * 4 * 60 * 60 * 1000);
@@ -107,10 +117,10 @@ export async function processPendingArticles(
          WHERE id = ?`,
       )
       .bind(
-        result.title_zh,
-        result.summary_zh,
-        result.category,
-        JSON.stringify(result.tags),
+        finalResult.title_zh,
+        finalResult.summary_zh,
+        finalResult.category,
+        JSON.stringify(finalResult.tags),
         slug,
         scheduledAt,
         row.id,
